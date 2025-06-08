@@ -15,7 +15,6 @@ class DeleteChunkRequest(BaseModel):
     document_id: Optional[UUID] = None
     chunk_id: Optional[UUID] = None
 
-
 class UpdateChunkRequest(BaseModel):
     library_id: Optional[UUID] = None
     document_id: Optional[UUID] = None
@@ -23,4 +22,22 @@ class UpdateChunkRequest(BaseModel):
     chunk: Optional[Chunk] = None
     placement: str
 
+class SearchHashRequest(BaseModel):
+    library_id: Optional[UUID] = None
+    text: str 
+    k: int
 
+class SearchTreeRequest(BaseModel):
+    library_id: Optional[UUID] = None
+    text: str 
+    k: int
+
+class UpdateLibraryRequest(BaseModel):
+    library_id: Optional[UUID] = None
+    library: Library
+
+class IndexTreeRequest(BaseModel):
+    library_id: Optional[UUID] = None
+
+class IndexHashRequest(BaseModel):
+    library_id: Optional[UUID] = None

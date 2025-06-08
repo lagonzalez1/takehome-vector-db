@@ -1,24 +1,55 @@
 from fastapi import FastAPI, HTTPException
 from Classes.Driver import Driver
-from Classes.Library import Library, Document, Chunk
-from Classes.Requests import CreateChunkRequest, DeleteChunkRequest, UpdateChunkRequest
+from Classes.Library import Library, Document, Chunk, LibraryMetadata, DocumentMetadata, ChunkMetadata
+from Classes.Requests import CreateChunkRequest, DeleteChunkRequest, UpdateChunkRequest, SearchHashRequest, SearchTreeRequest, IndexTreeRequest, UpdateLibraryRequest, IndexHashRequest
 from uuid import UUID, uuid4
-
+from typing import List, Optional
+import numpy as np
 # Create FastAPI app
 app = FastAPI()
 
 # Define Driver Class
 driver = Driver()
 
-# Define a simple GET endpoint
-@app.get("/")
-def read_root():
-    return {"message": "Hello, FastAPI!"}
+chunk_texts = [
+    "The sky is blue.",
+    "I enjoy long walks in the park.",
+    "Programming in Python is fun.",
+    "I am feeling a bit sad",
+    "I do not enjoy debugging",
+    "Dictator",
+    "Hitler",
+    "Coffee tastes best when fresh.",
+    "Reading a good book relaxes me."
+]
+
+meta_chunk = ChunkMetadata()
+chunks = [Chunk(text=txt,              
+                embedding=driver.generate_chunk_embedding(txt),   
+                metadata=meta_chunk)
+          for txt in chunk_texts]
+
+doc = Document(
+    id="6150990f-5e62-4996-82ee-84395b2e673b",
+    chunks=chunks,
+    metadata=DocumentMetadata()
+)
+
+library = Library(
+    id="069b276d-2b12-4e37-9107-473daf96f54d",
+    documents=[doc],
+    metadata=LibraryMetadata(
+        name="Example Library",
+        description="One doc, five chunks"
+    )
+)
+
+driver.create_library(library)
 
 
 # Create a library with default id, documents and metadata
 @app.post("/create_library")
-def create_library(library : Library):
+def create_library(library: Library):
     try:
         driver.create_library(library)
         return {"message": f"Library created with ID: {library.id}"}
@@ -45,12 +76,14 @@ def get_library(library_id: UUID):
         raise HTTPException(status_code=404, detail="libraries error")
 
 
-
 # Update the library
 @app.post("/update_library")
-def update_library(library_id: uuid4, library: Library):
-    # Find the library using id then update the contents ?
-    # Find the library using id then update the contents ?
+def update_library(request: UpdateLibraryRequest):
+    try:
+        update = driver.update_library(request.library_id, request.library)
+        return {"message": f"update library request {update}"}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="update_library error")
     return {"message": "Update library"}
 
 
@@ -58,8 +91,8 @@ def update_library(library_id: uuid4, library: Library):
 @app.post("/create_chunk")
 def create_chunk(request: CreateChunkRequest):
     try:   
-        created = driver.create_chunk(request.library_id,request.document_id, request.text, request.placement)
-        return {"message": f"create chunk result {created}"}
+        create = driver.create_chunk(request.library_id,request.document_id, request.text, request.placement)
+        return {"message": f"create chunk request: {create}"}
     except KeyError:
         raise HTTPException(status_code=404, detail="create_chunk error found") 
 
@@ -68,51 +101,68 @@ def create_chunk(request: CreateChunkRequest):
 def update_chunk(request: UpdateChunkRequest):
     try:   
         update = driver.update_chunk(request.library_id,request.document_id, request.chunk_id, request.chunk)
-        return {"message": f"create chunk result {update}"}
+        return {"message": f"update chunk request: {update}"}
     except KeyError:
-        raise HTTPException(status_code=404, detail="create_chunk error found") 
-
-
+        raise HTTPException(status_code=404, detail="update_chunk error found") 
 
 # Delete chunk to document
 @app.post("/delete_chunk")
 def delete_chunk(request: DeleteChunkRequest):
     try:   
         delete = driver.delete_chunk(request.library_id, request.document_id, request.chunk_id)
-        return {"message": f"delete chunk result: {delete}"}
+        return {"message": f"delete chunk request: {delete}"}
     except KeyError:
-        raise HTTPException(status_code=404, detail="create_chunk error found") 
+        raise HTTPException(status_code=404, detail="delete_chunk error found") 
 
 
 # Index documents using traditional hash
-@app.get("/index_hash")
-def index_hash(library_id: UUID):
+@app.post("/index_hash")
+def index_hash(request: IndexHashRequest):
     try:   
-        driver.index_library(library_id)
+        driver.index_library(request.library_id)
+        return {"message": f"index hash"}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="index_hash error found") 
+
+
+# Index documents using tree hash
+@app.post("/index_tree")
+def index_tree(request: IndexTreeRequest):
+    try:   
+        driver.index_library_tree(request.library_id)
         return {"message": f"index result"}
     except KeyError:
-        raise HTTPException(status_code=404, detail="create_chunk error found") 
+        raise HTTPException(status_code=404, detail="index_tree error found") 
+
 
 # Index documents using traditional hash
 @app.post("/search_hash")
-def index_hash(library_id: UUID, text: str):
+def search_hash(request: SearchHashRequest):
     try:   
-        driver.search_hash(library_id, text)
-        return {"message": f"index result"}
+        result = driver.search_hash(request.library_id, request.text, request.k)
+
+        return {"message": f"index hash result: {result}"}
     except KeyError:
-        raise HTTPException(status_code=404, detail="create_chunk error found") 
-
-
+        raise HTTPException(status_code=404, detail="search_hash error found") 
 
 
 # Index documents using traditional hash
-@app.get("/index_tree")
-def index_tree(library_id: UUID):
+@app.post("/search_tree")
+def search_hash(request: SearchTreeRequest):
     try:   
-        driver.index_library_tree(library_id)
-        return {"message": f"index result"}
+        result = driver.search_tree(request.library_id, request.text, request.k)
+        return {"message": f"search tree result {result}"}
     except KeyError:
-        raise HTTPException(status_code=404, detail="create_chunk error found") 
+        raise HTTPException(status_code=404, detail="search_tree error found") 
 
+
+# Index documents using traditional hash
+@app.post("/search_vptree")
+def search_hash(request: SearchTreeRequest):
+    try:   
+        result = driver.search_vptree(request.library_id, request.text, request.k)
+        return {"message": f"search vptree result {result}"}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="search_tree error found") 
 
 

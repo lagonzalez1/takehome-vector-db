@@ -4,7 +4,6 @@ from typing import List, Optional
 from uuid import UUID, uuid4
 
 
-
 class ChunkMetadata(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -30,4 +29,4 @@ class LibraryMetadata(BaseModel):
 class Library(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     documents: List[Document]
-    metadata: LibraryMetadata
+    metadata: Optional[LibraryMetadata] = None

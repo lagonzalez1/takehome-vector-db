@@ -23,3 +23,27 @@ The API should:
 2. Allow the users to create, read, update and delete chunks within a library.
 3. Index the contents of a library.
 4. Do **k-Nearest Neighbor vector search** over the selected library with a given embedding query.
+
+### How to run
+1. Git clone this repo
+2. Open terminal and navigare /app/Dockerfile
+3. Shell command (build the docker iamge): docker build -t vector-takehome .
+4. Shell command (run the container): docker run -p 8000:8000 vector-takehome
+5. Using postman the following endpoints are available ...
+
+POST: /create_library
+GET: /libraries
+POST: /update_library
+POST: /create_chunk
+POST: /update_chunk
+POST: /delete_chunk
+POST: /index_hash
+POST: /index_tree
+POST: /search_hash
+POST: /search_tree
+
+
+### Solution
+
+The indexing algorithms i choose are Hashmap (brute force), KD-Tree and finally VP Tree
+
